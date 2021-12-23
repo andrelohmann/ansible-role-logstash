@@ -1,0 +1,62 @@
+---
+
+- name: set pin facts
+  set_fact:
+    _pin_package: logstash
+    _pin_version: "{{ elasticsearch_release }}"
+
+- name: set elasticsearch preferences file
+  template:
+    src: pin.pref.j2
+    dest: "/etc/apt/preferences.d/logstash.pref"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: install logstash
+  apt:
+    name: "{{ packages }}"
+    state: latest
+    dpkg_options: 'force-confnew,force-confdef'
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    cache_valid_time: 3600
+  vars:
+    packages:
+    - logstash
+  register: _logstash_installed
+
+- block:
+
+  - name: Inserting a line after a pattern in Ansible example
+    lineinfile:
+      path: /etc/rsyslog.d/50-default.conf
+      line: "*.* @127.0.0.1:10514"
+      #line: "*.*                         @@127.0.0.1:10514"
+      #regexp: "^*.*                         @@127.0.0.1:10514"
+      insertbefore: BOF
+
+  - name: restart rsyslog
+    systemd:
+      name: rsyslog
+      enabled: yes
+      state: restarted
+
+  - name: set logstash syslog config file
+    template:
+      src: logstash-syslog.conf.j2
+      dest: "/etc/logstash/conf.d/logstash-syslog.conf"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: restart logstash
+    systemd:
+      name: logstash
+      enabled: yes
+      state: restarted
+
+  when: elasticsearch_logstash_syslog_config|bool
+
+...

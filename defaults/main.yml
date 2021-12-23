@@ -1,0 +1,8 @@
+---
+
+elasticsearch_listen_ip: "localhost"
+elasticsearch_release: 7.16.2
+elasticsearch_logstash_syslog_config: False
+elasticsearch_syslog_index: syslog-direct
+
+...
